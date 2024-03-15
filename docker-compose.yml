@@ -1,0 +1,64 @@
+version: '3'
+
+services:
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - .:/var/www/html
+    stdin_open: true
+    tty: true
+    depends_on:
+      - php
+      - db      
+    networks:
+      - mynet
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: my-php-fpm
+    volumes:
+      - .:/var/www/html
+    expose:
+      - "9000:9000"
+    depends_on:
+      - db
+    networks:
+      - mynet
+  db:
+    image: mysql:8
+    ports:
+      - 3306:3306
+    restart: always
+    volumes:
+      - ./database:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_USER: root
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: docker
+      MYSQL_USER: user
+      MYSQL_PASSWORD: user_password
+    networks:
+      - mynet
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    restart: always
+    container_name: pma
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      MYSQL_ROOT_PASSWORD: 1234    
+    ports:
+      - 8081:80
+    depends_on:
+      - db      
+    networks:
+      - mynet     
+#Docker Networks
+networks:
+  mynet:
+    driver: bridge
